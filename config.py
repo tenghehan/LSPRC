@@ -17,6 +17,6 @@ def argument_parser():
     parser.add_argument('--lr_new', type=float, default=0.1, help='learning rate of classifier_base')
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
-    parser.add_argument('--gpu_id', type=int, help='GPU device id used')
+    parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
 
     return parser

@@ -38,10 +38,10 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
             train_probs = torch.sigmoid(train_logits)
             preds_probs.append(train_probs.detach().cpu().numpy())
 
-            log_interval = 20
-            if (step + 1) % log_interval == 0 or (step + 1) % len(train_loader) == 0:
-                print(f'Step {step}/{len(train_loader)} in Ep {epoch} ',
-                      f'train_loss: {loss_meter.avg: 4f}')
+            # log_interval = 20
+            # if (step + 1) % log_interval == 0 or (step + 1) % len(train_loader) == 0:
+            #     print(f'Step {step}/{len(train_loader)} in Ep {epoch} ',
+            #           f'train_loss: {loss_meter.avg: 4f}')
         train_loss = loss_meter.avg
 
         gt_labels = np.concatenate(gt_list, axis=0)
@@ -111,7 +111,7 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
             maximum = valid_result.ma
             best_epoch = i
             best_model = model
-            torch.save(best_model, path)
+            torch.save(best_model.state_dict(), path)
 
         result_list.append((train_result, valid_result))
 
@@ -133,14 +133,14 @@ def main():
 
     train_dataset = AttrDataset(
         args=args,
-        annotation_data=annotation_data['training_set'],
+        annotation_data=annotation_data['training_set'][:100],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
     )
     valid_dataset = AttrDataset(
         args=args,
-        annotation_data=annotation_data['validation_set'],
+        annotation_data=annotation_data['validation_set'][:100],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
@@ -199,7 +199,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    use_gpu = True
+    use_gpu = False
     if use_gpu:
         torch.cuda.set_device(args.gpu_id)
         device = torch.device(args.gpu_id)
