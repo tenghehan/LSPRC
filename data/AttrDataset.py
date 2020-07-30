@@ -3,7 +3,7 @@ import numpy as np
 import torchvision.transforms as T
 import os
 from PIL import Image
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 class AttrDataset(data.Dataset):
@@ -11,7 +11,7 @@ class AttrDataset(data.Dataset):
     def __init__(
             self,
             args,
-            annotation_data: List[Tuple[str, np.ndarray]],
+            annotation_data: List[Tuple[str, Optional[np.ndarray]]],
             attr_names_cn,
             attr_names_en,
             transform=None,

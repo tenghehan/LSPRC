@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
@@ -148,10 +150,11 @@ class ResNet(nn.Module):
 
 def remove_fc(state_dict):
     """ Remove the fc layer parameter from state_dict. """
+    res = OrderedDict()
     for key, value in state_dict.items():
-        if key.startswith('fc.'):
-            del state_dict[key]
-    return state_dict
+        if not key.startswith('fc.'):
+            res[key] = value
+    return res
 
 
 def resnet18(pretrained=False, **kwargs):

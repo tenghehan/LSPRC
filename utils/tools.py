@@ -2,7 +2,9 @@ import numpy as np
 import random
 import torch
 from torchvision import transforms
+from torchvision.utils import make_grid
 from easydict import EasyDict
+import matplotlib.pyplot as plt
 
 
 def set_seed(rand_seed):
@@ -98,6 +100,19 @@ def get_pedestrian_metrics(gt_label, preds_probs, threshold=0.5):
     result.error_num, result.fn_num, result.fp_num = false_pos + false_neg, false_neg, false_pos
 
     return result
+
+def show_image_model_to_tensorboard(writer, model, train_loader):
+    dataiter = iter(train_loader)
+    images, labels, image_filenames = dataiter.next()
+
+    img_grid = make_grid(images)
+
+    # plt.imshow(img_grid.numpy())
+
+    writer.add_image('pedestrian_attributes_images', img_grid)
+    writer.add_graph(model, images)
+    writer.close()
+
 
 class AverageMeter(object):
     """

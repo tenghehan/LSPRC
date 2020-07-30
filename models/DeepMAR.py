@@ -16,7 +16,7 @@ class DeepMAR_ResNet50(nn.Module):
         self.last_conv_stride = 2
         self.drop_pool5 = True
         self.drop_pool5_rate = 0.5
-        self.pretrained = False
+        self.pretrained = True
 
         self.features = resnet50(pretrained=self.pretrained, last_conv_stride=self.last_conv_stride)
         self.classifier = nn.Linear(2048, self.attr_num)

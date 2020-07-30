@@ -18,5 +18,7 @@ def argument_parser():
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
+    parser.add_argument('--resume', default=False, action='store_true')
+    parser.add_argument('--model_name', type=str, required=True)
 
     return parser

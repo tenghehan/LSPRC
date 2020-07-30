@@ -2,3 +2,5 @@
 .idea/
 *.swp
 __pycache__
+runs/
+results/

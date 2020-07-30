@@ -4,17 +4,18 @@ from data.load_rap_attributes_data_mat import *
 from data.AttrDataset import AttrDataset, get_transform
 from torch.utils.data import DataLoader
 from config import argument_parser
-from utils.tools import set_seed, get_pedestrian_metrics, AverageMeter, to_scalar
+from utils.tools import set_seed, get_pedestrian_metrics, AverageMeter, to_scalar, show_image_model_to_tensorboard
 from models.DeepMAR import DeepMAR_ResNet50
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.nn.utils import clip_grad_norm_
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 set_seed(100)
 
 
-def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path):
+def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer):
 
     def train(model, train_loader, criterion, optimizer):
         model.train()
@@ -77,7 +78,7 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
 
     result_list = []
 
-    for i in range(epoch):
+    for i in range(start_epoch, epoch):
 
         train_loss, train_gt, train_probs = train(
             model=model,
@@ -92,13 +93,14 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
             criterion=criterion
         )
 
-        lr_scheduler.step(metrics=valid_loss, epoch=i)
+        # lr_scheduler.step(metrics=valid_loss, epoch=i)
+        lr_scheduler.step(metrics=valid_loss)
 
         train_result = get_pedestrian_metrics(train_gt, train_probs)
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
 
         print(f'epoch {i} \n',
-              f'training loss: {train_loss}, validate loss: {valid_loss} \n',
+              'training loss: {:.6f}, validate loss: {:.6f} \n'.format(train_loss, valid_loss),
               'training ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
                   train_result.ma, train_result.instance_acc, train_result.instance_prec,
                   train_result.instance_recall, train_result.instance_f1
@@ -107,11 +109,30 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
                   valid_result.ma, valid_result.instance_acc, valid_result.instance_prec,
                   valid_result.instance_recall, valid_result.instance_f1
               ))
+
+        writer.add_scalar('Loss/train', train_loss, i)
+        writer.add_scalar('Loss/valid', valid_loss, i)
+        writer.add_scalar('ma/train', train_result.ma, i)
+        writer.add_scalar('ma/valid', valid_result.ma, i)
+        writer.add_scalar('Accuracy/train', train_result.instance_acc, i)
+        writer.add_scalar('Accuracy/valid', valid_result.instance_acc, i)
+        writer.add_scalar('Precision/train', train_result.instance_prec, i)
+        writer.add_scalar('Precision/valid', valid_result.instance_prec, i)
+        writer.add_scalar('Recall/train', train_result.instance_recall, i)
+        writer.add_scalar('Recall/valid', valid_result.instance_recall, i)
+        writer.add_scalar('F1/train', train_result.instance_f1, i)
+        writer.add_scalar('F1/valid', valid_result.instance_f1, i)
+
         if valid_result.ma > maximum:
             maximum = valid_result.ma
             best_epoch = i
             best_model = model
-            torch.save(best_model.state_dict(), path)
+            torch.save({
+                'epoch': i,
+                'model_state_dict': best_model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': lr_scheduler.state_dict(),
+                }, os.path.join(path, 'max.pth'))
 
         result_list.append((train_result, valid_result))
 
@@ -120,7 +141,7 @@ def train_model(epoch, model, train_loader, valid_loader, criterion, optimizer, 
 
 def main():
 
-    save_result_path = os.path.join('results', 'deepMAR_max.pth')
+    save_result_path = os.path.join('results', args.model_name)
 
     annotation_data = loadRAPAttr(args.annotation_file)
     annotation_data = processRAPAttr(annotation_data)
@@ -133,14 +154,14 @@ def main():
 
     train_dataset = AttrDataset(
         args=args,
-        annotation_data=annotation_data['training_set'][:100],
+        annotation_data=annotation_data['training_set'],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
     )
     valid_dataset = AttrDataset(
         args=args,
-        annotation_data=annotation_data['validation_set'][:100],
+        annotation_data=annotation_data['validation_set'],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
@@ -166,7 +187,11 @@ def main():
           f'validation set: {len(valid_loader.dataset)}, '
           f'attr_num: {len(train_dataset.attr_names_cn)}')
 
+    writer = SummaryWriter('runs/test_again')
+
     model = DeepMAR_ResNet50(len(train_dataset.attr_names_cn))
+
+    show_image_model_to_tensorboard(writer, model, train_loader)
     model = model.to(device)
 
     criterion = F.binary_cross_entropy_with_logits
@@ -180,17 +205,28 @@ def main():
     param_groups = [{'params': finetuned_params, 'lr': args.lr_ft},
                     {'params': new_params, 'lr': args.lr_new}]
     optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=False)
-    lr_sheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=4)
+    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.1, patience=4)
+
+    start_epoch = 0
+
+    if args.resume:
+        checkpoint = torch.load(os.path.join(save_result_path, 'max.pth'))
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        lr_scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1
 
     max_valid_ma, best_epoch, result_list = train_model(
+        start_epoch=start_epoch,
         epoch=args.epoch,
         model=model,
         train_loader=train_loader,
         valid_loader=valid_loader,
         criterion=criterion,
         optimizer=optimizer,
-        lr_scheduler=lr_sheduler,
-        path=save_result_path
+        lr_scheduler=lr_scheduler,
+        path=save_result_path,
+        writer=writer,
     )
 
 if __name__ == '__main__':
@@ -199,7 +235,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    use_gpu = False
+    use_gpu = True
     if use_gpu:
         torch.cuda.set_device(args.gpu_id)
         device = torch.device(args.gpu_id)
