@@ -5,6 +5,8 @@ from torchvision import transforms
 from torchvision.utils import make_grid
 from easydict import EasyDict
 import matplotlib.pyplot as plt
+import os
+import json
 
 
 def set_seed(rand_seed):
@@ -101,6 +103,7 @@ def get_pedestrian_metrics(gt_label, preds_probs, threshold=0.5):
 
     return result
 
+
 def show_image_model_to_tensorboard(writer, model, train_loader):
     dataiter = iter(train_loader)
     images, labels, image_filenames = dataiter.next()
@@ -112,6 +115,60 @@ def show_image_model_to_tensorboard(writer, model, train_loader):
     writer.add_image('pedestrian_attributes_images', img_grid)
     writer.add_graph(model, images)
     writer.close()
+
+
+def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_result, valid_result):
+    i = epoch
+    writer.add_scalar('Loss/train', train_loss, i)
+    writer.add_scalar('Loss/valid', valid_loss, i)
+    writer.add_scalar('ma/train', train_result.ma, i)
+    writer.add_scalar('ma/valid', valid_result.ma, i)
+    writer.add_scalar('Accuracy/train', train_result.instance_acc, i)
+    writer.add_scalar('Accuracy/valid', valid_result.instance_acc, i)
+    writer.add_scalar('Precision/train', train_result.instance_prec, i)
+    writer.add_scalar('Precision/valid', valid_result.instance_prec, i)
+    writer.add_scalar('Recall/train', train_result.instance_recall, i)
+    writer.add_scalar('Recall/valid', valid_result.instance_recall, i)
+    writer.add_scalar('F1/train', train_result.instance_f1, i)
+    writer.add_scalar('F1/valid', valid_result.instance_f1, i)
+
+
+def output_results_to_screen(epoch, train_loss, valid_loss, train_result, valid_result):
+    print(f'epoch {epoch} \n',
+          'training loss: {:.6f}, validate loss: {:.6f} \n'.format(train_loss, valid_loss),
+          'training ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
+              train_result.ma, train_result.instance_acc, train_result.instance_prec,
+              train_result.instance_recall, train_result.instance_f1
+          ),
+          'validation ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
+              valid_result.ma, valid_result.instance_acc, valid_result.instance_prec,
+              valid_result.instance_recall, valid_result.instance_f1
+          ))
+
+
+def save_results_to_json(best_epoch, loss_list, result_list, save_result_path):
+    result = []
+    for i in range(len(loss_list)):
+        result.append({
+            'epoch': i,
+            'training_loss': loss_list[i][0],
+            'validation_loss': loss_list[i][1],
+            'training_ma': result_list[i][0].ma,
+            'validation_ma': result_list[i][1].ma,
+            'training_acc': result_list[i][0].instance_acc,
+            'validation_acc': result_list[i][1].instance_acc,
+            'training_prec': result_list[i][0].instance_prec,
+            'validation_prec': result_list[i][1].instance_prec,
+            'training_recall': result_list[i][0].instance_recall,
+            'validation_recall': result_list[i][1].instance_recall,
+            'training_f1': result_list[i][0].instance_f1,
+            'validation_f1': result_list[i][1].instance_f1,
+        })
+    result_json = open(os.path.join(save_result_path, 'result_data.json'), 'w+')
+    json.dump({
+        'best_epoch': best_epoch,
+        'result_data': result,
+    }, result_json)
 
 
 class AverageMeter(object):
