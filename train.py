@@ -134,16 +134,16 @@ def main():
     train_transform, valid_transform = get_transform(args)
 
     train_dataset = AttrDataset(
-        args=args,
-        annotation_data=annotation_data['training_set'][:100],
+        image_dir_path=args.train_val_images_dir,
+        annotation_data=annotation_data['training_set'],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
     )
     valid_dataset = AttrDataset(
-        args=args,
-        annotation_data=annotation_data['validation_set'][:100],
-        transform=train_transform,
+        image_dir_path=args.train_val_images_dir,
+        annotation_data=annotation_data['validation_set'],
+        transform=valid_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
     )
@@ -168,7 +168,7 @@ def main():
           f'validation set: {len(valid_loader.dataset)}, '
           f'attr_num: {len(train_dataset.attr_names_cn)}')
 
-    writer = SummaryWriter('runs/test_again')
+    writer = SummaryWriter(os.path.join('runs', args.model_name))
 
     model = DeepMAR_ResNet50(len(train_dataset.attr_names_cn))
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    use_gpu = False
+    use_gpu = True
     if use_gpu:
         torch.cuda.set_device(args.gpu_id)
         device = torch.device(args.gpu_id)

@@ -10,7 +10,7 @@ class AttrDataset(data.Dataset):
 
     def __init__(
             self,
-            args,
+            image_dir_path,
             annotation_data: List[Tuple[str, Optional[np.ndarray]]],
             attr_names_cn,
             attr_names_en,
@@ -18,7 +18,7 @@ class AttrDataset(data.Dataset):
     ):
         self.annotation = annotation_data
         self.transform = transform
-        self.image_dir_path = args.train_val_images_dir
+        self.image_dir_path = image_dir_path
         self.attr_names_cn = attr_names_cn
         self.attr_names_en = attr_names_en
 
