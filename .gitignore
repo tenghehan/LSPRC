@@ -4,3 +4,5 @@
 __pycache__
 runs/
 results/
+attributes_recognition_results.txt
+query_results.txt
