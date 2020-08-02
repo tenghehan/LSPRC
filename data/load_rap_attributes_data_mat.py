@@ -70,7 +70,7 @@ def processRAPAttr(data):
     partition_train = data['training_validation_sets']['partition']['train_index']
     partition_val = data['training_validation_sets']['partition']['val_index']
     sel = data['training_validation_sets']['selected_attributes']
-    test_set = data['test_set']
+    test_image_filenames = data['test_set']
 
     attr_names_cn_selected = [attr_names_cn[i] for i in sel]
     attr_names_en_selected = [attr_names_en[i] for i in sel]
@@ -84,6 +84,7 @@ def processRAPAttr(data):
 
     training_set = []
     validation_set = []
+    test_set = []
     for i in partition_train:
         image_filename = image_filenames[i - 1]
         attr = attr_data_extend[i - 1, :]
@@ -92,6 +93,8 @@ def processRAPAttr(data):
         image_filename = image_filenames[i - 1]
         attr = attr_data_extend[i - 1, :]
         validation_set.append((image_filename, attr))
+    for name in test_image_filenames:
+        test_set.append((name, None))
 
     res = {'training_set': training_set, 'validation_set': validation_set, \
            'attr_names_cn': attr_names_cn_extend, 'attr_names_en': attr_names_en_extend, \

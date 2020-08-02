@@ -27,7 +27,10 @@ class AttrDataset(data.Dataset):
         image_path = os.path.join(self.image_dir_path, image_filename)
         image = Image.open(image_path)
 
-        gt_label = gt_label.astype(np.float32)
+        if gt_label is not None:
+            gt_label = gt_label.astype(np.float32)
+        else:
+            gt_label = 0
 
         if self.transform is not None:
             image = self.transform(image)
