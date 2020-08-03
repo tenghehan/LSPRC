@@ -45,7 +45,7 @@ def attributes_recognition_results(preds_probs):
         for i in range(len(preds_probs)):
             print(i, end='', file=file)
             for prob in preds_probs[i]:
-                print(',%.6f' % prob, end='', file=file)
+                print(',%.0f' % prob, end='', file=file)
             print('', file=file)
 
 
@@ -62,7 +62,7 @@ def query_results(query_list, preds_probs):
             print(i, end='', file=file)
             for (image_index, confidence) in results[i]:
                 print(',%d' % image_index, end='', file=file)
-                print(',%.6f' % confidence, end='', file=file)
+                print(',%.0f' % confidence, end='', file=file)
             print('', file=file)
 
 
