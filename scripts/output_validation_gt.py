@@ -24,7 +24,7 @@ def load_data():
     }
     dataset = AttrDataset(
         image_dir_path=image_dir_path['validation_set'],
-        annotation_data=annotation_data['validation_set'][0:100],
+        annotation_data=annotation_data['validation_set'],
         transform=valid_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
