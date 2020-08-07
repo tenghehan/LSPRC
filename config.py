@@ -20,6 +20,7 @@ def argument_parser():
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
     parser.add_argument('--resume', default=False, action='store_true')
     parser.add_argument('--model_name', type=str, required=True)
+    parser.add_argument('--weighted_loss', default=False, action='store_true')
 
     return parser
 

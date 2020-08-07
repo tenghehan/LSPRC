@@ -15,9 +15,9 @@ from torch.utils.tensorboard import SummaryWriter
 set_seed(100)
 
 
-def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer):
+def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer, weights_attr):
 
-    def train(model, train_loader, criterion, optimizer):
+    def train(model, train_loader, criterion, optimizer, weights_attr):
         model.train()
         loss_meter = AverageMeter()
 
@@ -27,7 +27,8 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
         for step, (images, gt_labels, image_filenames) in enumerate(tqdm(train_loader)):
             images, gt_labels = images.to(device), gt_labels.to(device)
             train_logits = model(images)
-            train_loss = criterion(train_logits, gt_labels)
+            weights = get_weights(weights_attr, gt_labels)
+            train_loss = criterion(train_logits, gt_labels, weight=weights.to(device))
 
             train_loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=10.0)
@@ -86,6 +87,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             train_loader=train_loader,
             criterion=criterion,
             optimizer=optimizer,
+            weights_attr=weights_attr
         )
 
         valid_loss, valid_gt, valid_probs = valid(
@@ -135,7 +137,7 @@ def main():
 
     train_dataset = AttrDataset(
         image_dir_path=args.train_val_images_dir,
-        annotation_data=annotation_data['training_set'],
+        annotation_data=annotation_data['training_set'][0:10],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en
@@ -168,6 +170,10 @@ def main():
           f'validation set: {len(valid_loader.dataset)}, '
           f'attr_num: {len(train_dataset.attr_names_cn)}')
 
+    weights_attr = [(1, 1) for i in range(len(attr_names_cn))]
+    if args.weighted_loss:
+        weights_attr = get_attr_weights(annotation_data['training_set'])
+
     writer = SummaryWriter(os.path.join('runs', args.model_name))
 
     model = DeepMAR_ResNet50(len(train_dataset.attr_names_cn))
@@ -176,6 +182,7 @@ def main():
     model = model.to(device)
 
     criterion = F.binary_cross_entropy_with_logits
+
     finetuned_params = []
     new_params = []
     for n, p in model.named_parameters():
@@ -208,6 +215,7 @@ def main():
         lr_scheduler=lr_scheduler,
         path=save_result_path,
         writer=writer,
+        weights_attr=weights_attr
     )
 
     save_results_to_json(best_epoch, loss_list, result_list, save_result_path)
@@ -219,7 +227,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    use_gpu = True
+    use_gpu = False
     if use_gpu:
         torch.cuda.set_device(args.gpu_id)
         device = torch.device(args.gpu_id)

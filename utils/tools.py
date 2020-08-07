@@ -7,6 +7,7 @@ from easydict import EasyDict
 import matplotlib.pyplot as plt
 import os
 import json
+import math
 
 
 def set_seed(rand_seed):
@@ -115,6 +116,25 @@ def show_image_model_to_tensorboard(writer, model, train_loader):
     writer.add_image('pedestrian_attributes_images', img_grid)
     writer.add_graph(model, images)
     writer.close()
+
+
+def get_attr_weights(training_set):
+    data = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
+    pos_rate = list(data.sum(axis=0) * 1.0 / data.shape[0])
+    weights_attr = [(math.exp(1 - rate), math.exp(rate)) for rate in pos_rate]
+    return weights_attr
+
+
+def get_weights(weights_attr, gt_labels):
+    weights = torch.zeros(gt_labels.shape)
+    for i in range(gt_labels.shape[0]):
+        for j in range(gt_labels.shape[1]):
+            pos_weight, neg_weight = weights_attr[j]
+            if gt_labels[i][j] == 1:
+                weights[i][j] = pos_weight
+            elif gt_labels[i][j] == 0:
+                weights[i][j] = neg_weight
+    return weights
 
 
 def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_result, valid_result):
