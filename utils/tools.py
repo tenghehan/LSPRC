@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import torch
+from torch import tensor
 from torchvision import transforms
 from torchvision.utils import make_grid
 from easydict import EasyDict
@@ -126,8 +127,8 @@ def get_attr_weights(training_set):
 
 
 def get_weights(weights_attr, gt_labels):
-    pos_weights_attr = np.array([[pos for pos, neg in weights_attr]])
-    neg_weights_attr = np.array([[neg for pos, neg in weights_attr]])
+    pos_weights_attr = tensor([[pos for pos, neg in weights_attr]])
+    neg_weights_attr = tensor([[neg for pos, neg in weights_attr]])
     weights = pos_weights_attr * gt_labels + neg_weights_attr * (1 - gt_labels)
     return weights
 
