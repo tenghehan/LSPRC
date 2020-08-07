@@ -137,7 +137,7 @@ def main():
 
     train_dataset = AttrDataset(
         image_dir_path=args.train_val_images_dir,
-        annotation_data=annotation_data['training_set'][0:10],
+        annotation_data=annotation_data['training_set'],
         transform=train_transform,
         attr_names_cn=attr_names_cn,
         attr_names_en=attr_names_en

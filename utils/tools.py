@@ -126,14 +126,9 @@ def get_attr_weights(training_set):
 
 
 def get_weights(weights_attr, gt_labels):
-    weights = torch.zeros(gt_labels.shape)
-    for i in range(gt_labels.shape[0]):
-        for j in range(gt_labels.shape[1]):
-            pos_weight, neg_weight = weights_attr[j]
-            if gt_labels[i][j] == 1:
-                weights[i][j] = pos_weight
-            elif gt_labels[i][j] == 0:
-                weights[i][j] = neg_weight
+    pos_weights_attr = np.array([[pos for pos, neg in weights_attr]])
+    neg_weights_attr = np.array([[neg for pos, neg in weights_attr]])
+    weights = pos_weights_attr * gt_labels + neg_weights_attr * (1 - gt_labels)
     return weights
 
 
@@ -214,3 +209,9 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / (self.count + 1e-20)
+
+
+if __name__ == '__main__':
+    weights_attr = [(0.9, 0.3), (0.4, 0.5), (0.2, 0.3)]
+    gt_labels = np.array([[1,1,1],[1,0,0],[0,1,1]])
+    weights = get_weights(weights_attr, gt_labels)
