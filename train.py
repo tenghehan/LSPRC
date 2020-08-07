@@ -227,7 +227,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    use_gpu = False
+    use_gpu = True
     if use_gpu:
         torch.cuda.set_device(args.gpu_id)
         device = torch.device(args.gpu_id)

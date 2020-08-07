@@ -127,8 +127,8 @@ def get_attr_weights(training_set):
 
 
 def get_weights(weights_attr, gt_labels):
-    pos_weights_attr = tensor([[pos for pos, neg in weights_attr]])
-    neg_weights_attr = tensor([[neg for pos, neg in weights_attr]])
+    pos_weights_attr = tensor([[pos for pos, neg in weights_attr]]).to(gt_labels.device)
+    neg_weights_attr = tensor([[neg for pos, neg in weights_attr]]).to(gt_labels.device)
     weights = pos_weights_attr * gt_labels + neg_weights_attr * (1 - gt_labels)
     return weights
 
