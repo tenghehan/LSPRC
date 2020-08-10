@@ -28,7 +28,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             images, gt_labels = images.to(device), gt_labels.to(device)
             train_logits = model(images)
             weights = get_weights(weights_attr, gt_labels)
-            train_loss = criterion(train_logits, gt_labels, weight=weights.to(device), pos_num=pos_num.to(device))
+            train_loss = criterion(train_logits, gt_labels, weight=weights.to(device), pos_num=pos_num)
 
             train_loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=10.0)
@@ -37,7 +37,10 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             loss_meter.update(to_scalar(train_loss))
 
             gt_list.append(gt_labels.cpu().numpy())
-            train_probs = torch.sigmoid(train_logits)
+            if args.probs == 'joint':
+                train_probs = logits_to_probs_joint(train_logits)
+            else:
+                train_probs = torch.sigmoid(train_logits)
             preds_probs.append(train_probs.detach().cpu().numpy())
 
             # log_interval = 20
@@ -64,7 +67,10 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
                 gt_list.append(gt_labels.cpu().numpy())
                 valid_logits = model(images)
                 valid_loss = criterion(valid_logits, gt_labels)
-                valid_probs = torch.sigmoid(valid_logits)
+                if args.probs == 'joint':
+                    valid_probs = logits_to_probs_joint(valid_logits)
+                else:
+                    valid_probs = torch.sigmoid(valid_logits)
                 preds_probs.append(valid_probs.cpu().numpy())
                 loss_meter.update(to_scalar(valid_loss))
 

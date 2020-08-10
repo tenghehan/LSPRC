@@ -158,7 +158,8 @@ def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
             w = None
         else:
             p = tensor(pos_num[start:(end+1)]).float()
-            w = p.max() / p
+            w = torch.exp(1 - p / p.sum())
+            w = w.to(gt_labels.device)
         softmax_loss += F.cross_entropy(logits, labels, weight=w)
 
     logits = train_logits[:, non_exclusive_attr_indexes]
@@ -170,6 +171,25 @@ def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
     sigmoid_loss = F.binary_cross_entropy_with_logits(logits, labels, weight=w)
 
     return softmax_loss + sigmoid_loss
+
+
+def logits_to_probs_joint(logits):
+    exclusive_groups = [(0, 1), (2, 5), (6, 8), (9, 10), (32, 37)]
+    attr_num = 55
+    non_exclusive_attr_indexes = [
+        i for i in range(attr_num)
+        if all(i < x or i > y for x, y in exclusive_groups)
+    ]
+
+    probs = torch.zeros(logits.shape)
+    for start, end in exclusive_groups:
+        group_logits = logits[:, start:(end+1)]
+        group_probs = torch.softmax(group_logits, axis=1)
+        probs[:, start:(end+1)] = group_probs
+
+    probs[:, non_exclusive_attr_indexes] = torch.sigmoid(logits[:, non_exclusive_attr_indexes])
+
+    return probs
 
 
 def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_result, valid_result):
@@ -252,6 +272,5 @@ class AverageMeter(object):
 
 
 if __name__ == '__main__':
-    weights_attr = [(0.9, 0.3), (0.4, 0.5), (0.2, 0.3)]
-    gt_labels = np.array([[1,1,1],[1,0,0],[0,1,1]])
-    weights = get_weights(weights_attr, gt_labels)
+    logits = torch.randn((10, 55))
+    probs = logits_to_probs_joint(logits)
