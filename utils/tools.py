@@ -2,6 +2,7 @@ import numpy as np
 import random
 import torch
 from torch import tensor
+import torch.nn.functional as F
 from torchvision import transforms
 from torchvision.utils import make_grid
 from easydict import EasyDict
@@ -121,9 +122,10 @@ def show_image_model_to_tensorboard(writer, model, train_loader):
 
 def get_attr_weights(training_set):
     data = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
+    pos_num = list(data.sum(axis=0))
     pos_rate = list(data.sum(axis=0) * 1.0 / data.shape[0])
     weights_attr = [(math.exp(1 - rate), math.exp(rate)) for rate in pos_rate]
-    return weights_attr
+    return pos_num, weights_attr
 
 
 def get_weights(weights_attr, gt_labels):
@@ -131,6 +133,43 @@ def get_weights(weights_attr, gt_labels):
     neg_weights_attr = tensor([[neg for pos, neg in weights_attr]]).to(gt_labels.device)
     weights = pos_weights_attr * gt_labels + neg_weights_attr * (1 - gt_labels)
     return weights
+
+
+def sigmoid_CE_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
+    criterion = F.binary_cross_entropy_with_logits
+    return criterion(train_logits, gt_labels, weight)
+
+
+def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
+    exclusive_groups = [(0, 1), (2, 5), (6, 8), (9, 10), (32, 37)]
+    attr_num = 55
+    non_exclusive_attr_indexes = [
+        i for i in range(attr_num)
+        if all(i < x or i > y for x, y in exclusive_groups)
+    ]
+
+    softmax_loss = 0.0
+
+    for start, end in exclusive_groups:
+        logits = train_logits[:, start:(end+1)]
+        labels = gt_labels[:, start:(end+1)]
+        labels = torch.argmax(labels, axis=1)
+        if pos_num is None:
+            w = None
+        else:
+            p = tensor(pos_num[start:(end+1)]).float()
+            w = p.max() / p
+        softmax_loss += F.cross_entropy(logits, labels, weight=w)
+
+    logits = train_logits[:, non_exclusive_attr_indexes]
+    labels = gt_labels[:, non_exclusive_attr_indexes]
+    if weight is None:
+        w = None
+    else:
+        w = weight[:, non_exclusive_attr_indexes]
+    sigmoid_loss = F.binary_cross_entropy_with_logits(logits, labels, weight=w)
+
+    return softmax_loss + sigmoid_loss
 
 
 def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_result, valid_result):

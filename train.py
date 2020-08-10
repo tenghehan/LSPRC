@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 set_seed(100)
 
 
-def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer, weights_attr):
+def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer, weights_attr, pos_num):
 
     def train(model, train_loader, criterion, optimizer, weights_attr):
         model.train()
@@ -28,7 +28,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             images, gt_labels = images.to(device), gt_labels.to(device)
             train_logits = model(images)
             weights = get_weights(weights_attr, gt_labels)
-            train_loss = criterion(train_logits, gt_labels, weight=weights.to(device))
+            train_loss = criterion(train_logits, gt_labels, weight=weights.to(device), pos_num=pos_num.to(device))
 
             train_loss.backward()
             clip_grad_norm_(model.parameters(), max_norm=10.0)
@@ -171,8 +171,9 @@ def main():
           f'attr_num: {len(train_dataset.attr_names_cn)}')
 
     weights_attr = [(1, 1) for i in range(len(attr_names_cn))]
+    pos_num = [1 for i in range(len(attr_names_cn))]
     if args.weighted_loss:
-        weights_attr = get_attr_weights(annotation_data['training_set'])
+        pos_num, weights_attr = get_attr_weights(annotation_data['training_set'])
 
     writer = SummaryWriter(os.path.join('runs', args.model_name))
 
@@ -181,7 +182,9 @@ def main():
     show_image_model_to_tensorboard(writer, model, train_loader)
     model = model.to(device)
 
-    criterion = F.binary_cross_entropy_with_logits
+    criterion = sigmoid_CE_loss_function
+    if args.joint_loss:
+        criterion = joint_loss_function
 
     finetuned_params = []
     new_params = []
@@ -215,7 +218,8 @@ def main():
         lr_scheduler=lr_scheduler,
         path=save_result_path,
         writer=writer,
-        weights_attr=weights_attr
+        weights_attr=weights_attr,
+        pos_num=pos_num
     )
 
     save_results_to_json(best_epoch, loss_list, result_list, save_result_path)
