@@ -22,7 +22,6 @@ def argument_parser():
     parser.add_argument('--model_name', type=str, required=True)
     parser.add_argument('--weighted_loss', default=False, action='store_true')
     parser.add_argument('--joint_loss', default=False, action='store_true')
-    parser.add_argument('--probs', type=str, required=True, choices=['sigmoid', 'joint'])
 
     return parser
 
@@ -40,7 +39,8 @@ def inference_argument_parser():
     parser.add_argument('--batchsize', type=int, default=64)
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
-    parser.add_argument('--model_path', type=str, default='results/deepMAR/max.pth')
+    parser.add_argument('--model_path', type=str, default='results/deepMAR_jointweightedloss/max.pth')
+    parser.add_argument('--probs', type=str, required=True, choices=['sigmoid', 'joint'])
 
     return parser
 

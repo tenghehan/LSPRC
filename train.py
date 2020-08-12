@@ -37,7 +37,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             loss_meter.update(to_scalar(train_loss))
 
             gt_list.append(gt_labels.cpu().numpy())
-            if args.probs == 'joint':
+            if args.joint_loss:
                 train_probs = logits_to_probs_joint(train_logits)
             else:
                 train_probs = torch.sigmoid(train_logits)
@@ -67,7 +67,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
                 gt_list.append(gt_labels.cpu().numpy())
                 valid_logits = model(images)
                 valid_loss = criterion(valid_logits, gt_labels)
-                if args.probs == 'joint':
+                if args.joint_loss:
                     valid_probs = logits_to_probs_joint(valid_logits)
                 else:
                     valid_probs = torch.sigmoid(valid_logits)

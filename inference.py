@@ -6,7 +6,7 @@ from data.AttrDataset import AttrDataset, get_transform
 from torch.utils.data import DataLoader
 from models.DeepMAR import DeepMAR_ResNet50
 from tqdm import tqdm
-from utils.tools import get_pedestrian_metrics
+from utils.tools import get_pedestrian_metrics, logits_to_probs_joint
 
 
 def load_data():
@@ -84,7 +84,10 @@ def inference(model, dataloader):
         for step, (images, gt_labels, image_filenames) in enumerate(tqdm(dataloader)):
             images = images.to(device)
             logits = model(images)
-            probs = torch.sigmoid(logits)
+            if args.probs == 'sigmoid':
+                probs = torch.sigmoid(logits)
+            else:
+                probs = logits_to_probs_joint(logits)
             preds_probs.append(probs.cpu().numpy())
             gt_list.append(gt_labels.cpu().numpy())
 
@@ -106,7 +109,7 @@ def output_ma_acc(preds_probs, gt_labels):
 
     print('label_ma:', result.label_ma)
 
-    print('vma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
+    print('ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
               result.ma, result.instance_acc, result.instance_prec,
               result.instance_recall, result.instance_f1))
 

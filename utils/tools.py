@@ -141,8 +141,9 @@ def sigmoid_CE_loss_function(train_logits, gt_labels, weight=None, pos_num=None)
 
 
 def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
-    exclusive_groups = [(0, 1), (2, 5), (6, 8), (9, 10), (32, 37)]
-    attr_num = 55
+    # exclusive_groups = [(0, 1), (2, 5), (6, 8), (9, 10), (32, 37)]
+    exclusive_groups = [(6, 8), (9, 10)]
+    batchsize, attr_num = gt_labels.shape
     non_exclusive_attr_indexes = [
         i for i in range(attr_num)
         if all(i < x or i > y for x, y in exclusive_groups)
@@ -160,7 +161,7 @@ def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
             p = tensor(pos_num[start:(end+1)]).float()
             w = torch.exp(1 - p / p.sum())
             w = w.to(gt_labels.device)
-        softmax_loss += F.cross_entropy(logits, labels, weight=w)
+        softmax_loss += F.cross_entropy(logits, labels, weight=w, reduction='sum')
 
     logits = train_logits[:, non_exclusive_attr_indexes]
     labels = gt_labels[:, non_exclusive_attr_indexes]
@@ -168,9 +169,9 @@ def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
         w = None
     else:
         w = weight[:, non_exclusive_attr_indexes]
-    sigmoid_loss = F.binary_cross_entropy_with_logits(logits, labels, weight=w)
+    sigmoid_loss = F.binary_cross_entropy_with_logits(logits, labels, weight=w, reduction='sum')
 
-    return softmax_loss + sigmoid_loss
+    return (softmax_loss + sigmoid_loss) / (float(attr_num) * float(batchsize))
 
 
 def logits_to_probs_joint(logits):
@@ -181,7 +182,7 @@ def logits_to_probs_joint(logits):
         if all(i < x or i > y for x, y in exclusive_groups)
     ]
 
-    probs = torch.zeros(logits.shape)
+    probs = torch.zeros(logits.shape).to(logits.device)
     for start, end in exclusive_groups:
         group_logits = logits[:, start:(end+1)]
         group_probs = torch.softmax(group_logits, axis=1)
