@@ -5,6 +5,7 @@ from torch import tensor
 import torch.nn.functional as F
 from torchvision import transforms
 from torchvision.utils import make_grid
+from torch.utils.data import WeightedRandomSampler
 from easydict import EasyDict
 import matplotlib.pyplot as plt
 import os
@@ -120,10 +121,10 @@ def show_image_model_to_tensorboard(writer, model, train_loader):
     writer.close()
 
 
-def get_attr_weights(training_set):
+def get_attr_weights(training_set, attr_augment_rate):
     data = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
-    pos_num = list(data.sum(axis=0))
-    pos_rate = list(data.sum(axis=0) * 1.0 / data.shape[0])
+    pos_num = list(data.sum(axis=0) * np.asarray(attr_augment_rate))
+    pos_rate = list(data.sum(axis=0) * np.asarray(attr_augment_rate) * 1.0 / data.shape[0])
     weights_attr = [(math.exp(1 - rate), math.exp(rate)) for rate in pos_rate]
     return pos_num, weights_attr
 
@@ -134,6 +135,27 @@ def get_weights(weights_attr, gt_labels):
     weights = pos_weights_attr * gt_labels + neg_weights_attr * (1 - gt_labels)
     return weights
 
+
+def get_attr_augment_rate(attr_augment_rate, training_set):
+    attr_augment_rate[2] = 3
+    attr_augment_rate[5] = 3
+    attr_augment_rate[11] = 8
+    attr_augment_rate[14] = 2
+    attr_augment_rate[25] = 10
+    attr_augment_rate[35] = 2
+    attr_augment_rate[37] = 10
+    attr_augment_rate[43] = 2
+    attr_augment_rate[50] = 3
+    attr_augment_rate[51] = 2
+    attr_augment_rate[54] = 5
+    return attr_augment_rate
+
+
+def get_sampler(attr_augment_rate, training_set):
+    gt_labels = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
+    example_weights = ((attr_augment_rate - 1) * tensor(gt_labels) + 1).prod(axis=1)
+    sampler = WeightedRandomSampler(list(example_weights), 50000)
+    return sampler
 
 def sigmoid_CE_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
     criterion = F.binary_cross_entropy_with_logits

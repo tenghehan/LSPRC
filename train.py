@@ -156,12 +156,21 @@ def main():
         attr_names_en=attr_names_en
     )
 
+    attr_augment_rate = torch.ones([55]).float()
+    sampler = None
+    shuffle = True
+    if args.data_augment:
+        attr_augment_rate = get_attr_augment_rate(attr_augment_rate, annotation_data['training_set'])
+        sampler = get_sampler(attr_augment_rate, annotation_data['training_set'])
+        shuffle = False
+
     train_loader = DataLoader(
         dataset=train_dataset,
         batch_size=args.batchsize,
-        shuffle=True,
+        shuffle=shuffle,
         num_workers=args.num_workers,
         pin_memory=True,
+        sampler=sampler
     )
 
     valid_loader = DataLoader(
@@ -179,7 +188,7 @@ def main():
     weights_attr = [(1, 1) for i in range(len(attr_names_cn))]
     pos_num = [1 for i in range(len(attr_names_cn))]
     if args.weighted_loss:
-        pos_num, weights_attr = get_attr_weights(annotation_data['training_set'])
+        pos_num, weights_attr = get_attr_weights(annotation_data['training_set'], attr_augment_rate)
 
     writer = SummaryWriter(os.path.join('runs', args.model_name))
 

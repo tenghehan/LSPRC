@@ -22,6 +22,7 @@ def argument_parser():
     parser.add_argument('--model_name', type=str, required=True)
     parser.add_argument('--weighted_loss', default=False, action='store_true')
     parser.add_argument('--joint_loss', default=False, action='store_true')
+    parser.add_argument('--data_augment', default=False, action='store_true')
 
     return parser
 
