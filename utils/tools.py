@@ -122,6 +122,7 @@ def show_image_model_to_tensorboard(writer, model, train_loader):
 
 
 def get_attr_weights(training_set, attr_augment_rate):
+    attr_augment_rate = torch.ones([55]).float()
     data = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
     pos_num = list(data.sum(axis=0) * np.asarray(attr_augment_rate))
     pos_rate = list(data.sum(axis=0) * np.asarray(attr_augment_rate) * 1.0 / data.shape[0])
@@ -154,7 +155,7 @@ def get_attr_augment_rate(attr_augment_rate, training_set):
 def get_sampler(attr_augment_rate, training_set):
     gt_labels = np.concatenate([attr.reshape([1, -1]) for filename, attr in training_set], axis=0)
     example_weights = ((attr_augment_rate - 1) * tensor(gt_labels) + 1).prod(axis=1)
-    sampler = WeightedRandomSampler(list(example_weights), 50000)
+    sampler = WeightedRandomSampler(list(example_weights), len(training_set))
     return sampler
 
 def sigmoid_CE_loss_function(train_logits, gt_labels, weight=None, pos_num=None):

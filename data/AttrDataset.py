@@ -50,6 +50,7 @@ def get_transform(args):
         T.Pad(10),
         T.RandomCrop((height, width)),
         T.RandomHorizontalFlip(),
+        T.RandomRotation(degrees=(-30, 30)),
         T.ToTensor(),
         normalize,
     ])
