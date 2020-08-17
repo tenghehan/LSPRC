@@ -26,6 +26,29 @@ def argument_parser():
 
     return parser
 
+def argument_cas_parser():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--annotation_file', type=str, default='data/RAP/RAP_attributes_data.mat', \
+                        help='file path of attributes annotation results')
+    parser.add_argument('--train_val_images_dir', type=str, default='data/RAP/training_validation_images', \
+                        help='directory path of training and validation images')
+    parser.add_argument('--height', type=int, default=256)
+    parser.add_argument('--width', type=int, default=192)
+    parser.add_argument('--batchsize', type=int, default=64)
+    parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--epoch', type=int, default=70)
+    parser.add_argument('--lr_origin', type=float, default=0.02)
+    parser.add_argument('--lr_finetune', type=float, default=0.002)
+    parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
+    parser.add_argument('--resume', default=False, action='store_true')
+    parser.add_argument('--model_name', type=str, required=True)
+    parser.add_argument('--weighted_loss', default=False, action='store_true')
+    parser.add_argument('--joint_loss', default=False, action='store_true')
+    parser.add_argument('--data_augment', default=False, action='store_true')
+
+    return parser
+
 def inference_argument_parser():
 
     parser = argparse.ArgumentParser()

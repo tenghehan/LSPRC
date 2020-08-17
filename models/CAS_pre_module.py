@@ -5,7 +5,7 @@ import torch.nn.init as init
 
 
 class CASPreModule(nn.Module):
-    def __init__(self, C, ratio=0.6):
+    def __init__(self, C, ratio=0.0625):
         super(CASPreModule, self).__init__()
 
         self.ratio = ratio

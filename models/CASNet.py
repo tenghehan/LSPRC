@@ -8,8 +8,7 @@ from models.CAS import CAS
 class CAS_ResNet34(nn.Module):
     def __init__(
             self,
-            attr_num_a,
-            attr_num_b
+            is_global: list
     ):
         super(CAS_ResNet34, self).__init__()
 
@@ -17,8 +16,9 @@ class CAS_ResNet34(nn.Module):
         task_a: global attributes
         task_b: part attributes
         """
-        self.attr_num_a = attr_num_a
-        self.attr_num_b = attr_num_b
+        self.is_global = is_global
+        self.attr_num_a = is_global.count(True)
+        self.attr_num_b = is_global.count(False)
         self.pretrained = True
         self.drop_pool = True
         self.drop_pool_rate = 0.5
@@ -75,6 +75,16 @@ class CAS_ResNet34(nn.Module):
 
         return x_a, x_b
 
+    def combine_a_b(self, x_a, x_b, x):
+        i_a, i_b = 0, 0
+        for step, flag in enumerate(self.is_global):
+            if flag:
+                x[:, step] = x_a[:, i_a]
+                i_a += 1
+            else:
+                x[:, step] = x_b[:, i_b]
+                i_b += 1
+        return x
 
     def classification(self, x_a, x_b):
         x_a = F.avg_pool2d(x_a, x_a.shape[2:])
@@ -89,9 +99,8 @@ class CAS_ResNet34(nn.Module):
         x_a = self.classifier_a(x_a)
         x_b = self.classifier_b(x_b)
 
-        # TODO balabala
-        x = torch.cat((x_a, x_b), 1)
-
+        x = torch.zeros(x_a.shape[0], self.attr_num_a + self.attr_num_b)
+        x = self.combine_a_b(x_a, x_b, x)
         return x
 
 
@@ -111,7 +120,7 @@ class CAS_ResNet34(nn.Module):
 
 
 if __name__ == "__main__":
-    model = CAS_ResNet34(30, 25)
+    model = CAS_ResNet34([True] * 11 + [False] * 35 + [True] * 9)
     model.eval()
     batch_tensor = torch.ones([64, 3, 256, 192]).float()
     output = model(batch_tensor)
