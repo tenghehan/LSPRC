@@ -1,3 +1,4 @@
+import torch
 import torch.utils.data as data
 import numpy as np
 import torchvision.transforms as T
@@ -44,6 +45,7 @@ class AttrDataset(data.Dataset):
 def get_transform(args):
     height = args.height
     width = args.width
+    noise_std = 0.1
     normalize = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     train_transform = T.Compose([
         T.Resize((height, width)),
@@ -53,6 +55,9 @@ def get_transform(args):
         T.RandomRotation(degrees=(-30, 30)),
         T.ToTensor(),
         normalize,
+        T.RandomApply([
+            T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
+        ], p=0.5),
     ])
 
     valid_transform = T.Compose([

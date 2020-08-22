@@ -26,7 +26,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
 
         for step, (images, gt_labels, image_filenames) in enumerate(tqdm(train_loader)):
             images, gt_labels = images.to(device), gt_labels.to(device)
-            train_logits = model(images)
+            train_logits = model(images).to(device)
             weights = get_weights(weights_attr, gt_labels)
             train_loss = criterion(train_logits, gt_labels, weight=weights.to(device), pos_num=pos_num)
 
@@ -65,7 +65,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             for step, (images, gt_labels, image_filenames) in enumerate(tqdm(valid_loader)):
                 images, gt_labels = images.to(device), gt_labels.to(device)
                 gt_list.append(gt_labels.cpu().numpy())
-                valid_logits = model(images)
+                valid_logits = model(images).to(device)
                 valid_loss = criterion(valid_logits, gt_labels)
                 if args.joint_loss:
                     valid_probs = logits_to_probs_joint(valid_logits)
@@ -102,6 +102,8 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
             criterion=criterion
         )
 
+        lr_ft = optimizer.param_groups[0]['lr']
+        lr_new = optimizer.param_groups[1]['lr']
         # lr_scheduler.step(metrics=valid_loss)
         lr_scheduler.step()
 
@@ -109,7 +111,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
 
         output_results_to_screen(i, train_loss, valid_loss, train_result, valid_result)
-        show_scalars_to_tensorboard(writer, i, train_loss, valid_loss, train_result, valid_result)
+        show_scalars_to_tensorboard(writer, i, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new)
 
         if valid_result.ma > maximum:
             maximum = valid_result.ma
@@ -192,17 +194,29 @@ def main():
 
     writer = SummaryWriter(os.path.join('runs', args.model_name))
 
-    model = CAS_ResNet34([True] * 11 + [False] * 35 + [True] * 9)
+    model = CAS_ResNet34(args.ratio, [True] * 11 + [False] * 35 + [True] * 9)
 
-    show_image_model_to_tensorboard(writer, model, train_loader)
+    # show_image_model_to_tensorboard(writer, model, train_loader)
     model = model.to(device)
 
     criterion = sigmoid_CE_loss_function
     if args.joint_loss:
         criterion = joint_loss_function
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr_origin, nesterov=False)
-    lr_scheduler = StepLR(optimizer, step_size=40, gamma=0.1)
+    finetuned_params = []
+    new_params = []
+    for n, p in model.named_parameters():
+        if n.find('classifier') >= 0 or n.find('CAS') >= 0:
+            # print(f'Learning rate: {n} -> {args.lr_new}')
+            new_params.append(p)
+        else:
+            # print(f'Learning rate: {n} -> {args.lr_ft}')
+            finetuned_params.append(p)
+    param_groups = [{'params': finetuned_params, 'lr': args.lr_ft},
+                    {'params': new_params, 'lr': args.lr_new}]
+    optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+    # lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.001)
+    lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='exp_range', base_lr=[0.001, 0.05], max_lr=[0.05, 0.2], step_size_up=5, gamma=0.8)
 
     start_epoch = 0
 

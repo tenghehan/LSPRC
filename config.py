@@ -37,15 +37,19 @@ def argument_cas_parser():
     parser.add_argument('--width', type=int, default=192)
     parser.add_argument('--batchsize', type=int, default=64)
     parser.add_argument('--num_workers', type=int, default=4)
-    parser.add_argument('--epoch', type=int, default=70)
-    parser.add_argument('--lr_origin', type=float, default=0.02)
-    parser.add_argument('--lr_finetune', type=float, default=0.002)
+    parser.add_argument('--epoch', type=int, default=140)
+    parser.add_argument('--lr_ft', type=float, default=0.01, help='learning rate of feature extractor')
+    parser.add_argument('--lr_new', type=float, default=0.1, help='learning rate of classifier_base')
+    parser.add_argument('--momentum', type=float, default=0.9)
+    parser.add_argument('--weight_decay', type=float, default=5e-4)
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
     parser.add_argument('--resume', default=False, action='store_true')
     parser.add_argument('--model_name', type=str, required=True)
     parser.add_argument('--weighted_loss', default=False, action='store_true')
     parser.add_argument('--joint_loss', default=False, action='store_true')
     parser.add_argument('--data_augment', default=False, action='store_true')
+    parser.add_argument('--ratio', type=int, default=16)
+    parser.add_argument('--nesterov', default=False, action='store_true')
 
     return parser
 

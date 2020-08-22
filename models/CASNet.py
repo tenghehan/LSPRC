@@ -8,6 +8,7 @@ from models.CAS import CAS
 class CAS_ResNet34(nn.Module):
     def __init__(
             self,
+            ratio,
             is_global: list
     ):
         super(CAS_ResNet34, self).__init__()
@@ -33,10 +34,10 @@ class CAS_ResNet34(nn.Module):
         init.normal_(self.classifier_b.weight, std=0.001)
         init.constant_(self.classifier_b.bias, 0)
 
-        self.CAS_module1 = CAS(64)
-        self.CAS_module2 = CAS(128)
-        self.CAS_module3 = CAS(256)
-        self.CAS_module4 = CAS(512)
+        self.CAS_module1 = CAS(64, ratio)
+        self.CAS_module2 = CAS(128, ratio)
+        self.CAS_module3 = CAS(256, ratio)
+        self.CAS_module4 = CAS(512, ratio)
 
 
     def ResNet_Layer1(self, x_a, x_b):

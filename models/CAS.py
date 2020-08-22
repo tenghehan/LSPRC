@@ -6,11 +6,11 @@ from models.CAS_syn_module import CASSynModule
 
 
 class CAS(nn.Module):
-    def __init__(self, C):
+    def __init__(self, C, ratio):
         super(CAS, self).__init__()
 
-        self.pre_a = CASPreModule(C)
-        self.pre_b = CASPreModule(C)
+        self.pre_a = CASPreModule(C, ratio)
+        self.pre_b = CASPreModule(C, ratio)
 
         self.syn = CASSynModule(C)
 
@@ -29,6 +29,8 @@ class CAS(nn.Module):
         feature_out_b = (feature_b + feature_t_b + feature_syn_b) * A_b
 
         return feature_out_a, feature_out_b
+
+        # return x_a, x_b
 
 
 if __name__ == "__main__":
