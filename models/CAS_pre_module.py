@@ -24,10 +24,10 @@ class CASPreModule(nn.Module):
         self.W_sh = nn.Linear(reduced_C, C)
         self.init_fc(self.W_sh)
 
-        self.dropout_W_m = True
+        self.dropout_W_m = False
         self.dropout_W_m_rate = 0.6
 
-        self.noise_V_m = True
+        self.noise_V_m = False
         self.noise_V_m_std = 0.1
 
         if self.noise_V_m:

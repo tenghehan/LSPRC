@@ -14,7 +14,7 @@ class CASSynModule(nn.Module):
         self.conv_M_a = nn.Conv2d(2, 1, kernel_size=7, padding=3)
         self.conv_M_b = nn.Conv2d(2, 1, kernel_size=7, padding=3)
 
-        self.dropout_M = True
+        self.dropout_M = False
         self.dropout_M_rate = 0.6
 
     def forward(self, V_a_a, feature_sh_a, V_a_b, feature_sh_b):
