@@ -163,6 +163,11 @@ def sigmoid_CE_loss_function(train_logits, gt_labels, weight=None, pos_num=None)
     return criterion(train_logits, gt_labels, weight)
 
 
+def L2_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
+    criterion = F.mse_loss
+    return criterion(torch.sigmoid(train_logits), gt_labels)
+
+
 def joint_loss_function(train_logits, gt_labels, weight=None, pos_num=None):
     # exclusive_groups = [(0, 1), (2, 5), (6, 8), (9, 10), (32, 37)]
     exclusive_groups = [(6, 8), (9, 10)]

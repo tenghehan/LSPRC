@@ -67,3 +67,27 @@ def get_transform(args):
     ])
 
     return train_transform, valid_transform
+
+
+def get_transform_cocnn(args):
+    noise_std = 0.1
+    normalize = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    train_transform = T.Compose([
+        T.Resize((args.resize_height, args.resize_width)),
+        T.RandomCrop((args.input_height, args.input_width)),
+        T.RandomHorizontalFlip(),
+        # T.RandomRotation(degrees=(-30, 30)),
+        T.ToTensor(),
+        normalize,
+        T.RandomApply([
+            T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
+        ], p=0.5),
+    ])
+
+    valid_transform = T.Compose([
+        T.Resize((args.input_height, args.input_width)),
+        T.ToTensor(),
+        normalize
+    ])
+
+    return train_transform, valid_transform
