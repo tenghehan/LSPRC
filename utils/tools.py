@@ -221,7 +221,7 @@ def logits_to_probs_joint(logits):
     return probs
 
 
-def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new):
+def show_scalars_to_tensorboard_lr2(writer, epoch, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new):
     i = epoch
     writer.add_scalar('Loss/train', train_loss, i)
     writer.add_scalar('Loss/valid', valid_loss, i)
@@ -237,6 +237,23 @@ def show_scalars_to_tensorboard(writer, epoch, train_loss, valid_loss, train_res
     writer.add_scalar('F1/valid', valid_result.instance_f1, i)
     writer.add_scalar('Lr/lr_ft', lr_ft, i)
     writer.add_scalar('Lr/lr_new', lr_new, i)
+    
+
+def show_scalars_to_tensorboard_lr(writer, epoch, train_loss, valid_loss, train_result, valid_result, lr):
+    i = epoch
+    writer.add_scalar('Loss/train', train_loss, i)
+    writer.add_scalar('Loss/valid', valid_loss, i)
+    writer.add_scalar('ma/train', train_result.ma, i)
+    writer.add_scalar('ma/valid', valid_result.ma, i)
+    writer.add_scalar('Accuracy/train', train_result.instance_acc, i)
+    writer.add_scalar('Accuracy/valid', valid_result.instance_acc, i)
+    writer.add_scalar('Precision/train', train_result.instance_prec, i)
+    writer.add_scalar('Precision/valid', valid_result.instance_prec, i)
+    writer.add_scalar('Recall/train', train_result.instance_recall, i)
+    writer.add_scalar('Recall/valid', valid_result.instance_recall, i)
+    writer.add_scalar('F1/train', train_result.instance_f1, i)
+    writer.add_scalar('F1/valid', valid_result.instance_f1, i)
+    writer.add_scalar('Lr/lr', lr, i)
 
 
 def output_results_to_screen(epoch, train_loss, valid_loss, train_result, valid_result):

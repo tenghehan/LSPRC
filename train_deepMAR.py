@@ -103,13 +103,14 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
         )
 
         # lr_scheduler.step(metrics=valid_loss, epoch=i)
+        lr = optimizer.param_groups[0]['lr']
         lr_scheduler.step(metrics=valid_loss)
 
         train_result = get_pedestrian_metrics(train_gt, train_probs)
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
 
         output_results_to_screen(i, train_loss, valid_loss, train_result, valid_result)
-        show_scalars_to_tensorboard(writer, i, train_loss, valid_loss, train_result, valid_result)
+        show_scalars_to_tensorboard_lr(writer, i, train_loss, valid_loss, train_result, valid_result, lr)
 
         if valid_result.ma > maximum:
             maximum = valid_result.ma

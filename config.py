@@ -69,6 +69,8 @@ def argument_cocnn_parser():
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--lr_ft', type=float, default=0.05, help='learning rate of feature extractor')
+    parser.add_argument('--lr_new', type=float, default=0.2, help='learning rate of classifier_base')
     parser.add_argument('--momentum', type=float, default=0.9)
     parser.add_argument('--weight_decay', type=float, default=5e-4)
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')

@@ -111,7 +111,7 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
 
         output_results_to_screen(i, train_loss, valid_loss, train_result, valid_result)
-        show_scalars_to_tensorboard(writer, i, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new)
+        show_scalars_to_tensorboard_lr2(writer, i, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new)
 
         if valid_result.ma > maximum:
             maximum = valid_result.ma
@@ -214,8 +214,9 @@ def main():
             finetuned_params.append(p)
     param_groups = [{'params': finetuned_params, 'lr': args.lr_ft},
                     {'params': new_params, 'lr': args.lr_new}]
-    optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
-    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.001)
+    # optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+    optimizer = torch.optim.Adam(param_groups, weight_decay=args.weight_decay)
+    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
     # lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='exp_range', base_lr=[0.001, 0.05], max_lr=[0.05, 0.2], step_size_up=5, gamma=0.8)
 
     start_epoch = 0

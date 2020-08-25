@@ -104,13 +104,15 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
         )
 
         # lr_scheduler.step(metrics=valid_loss, epoch=i)
+        lr_ft = optimizer.param_groups[0]['lr']
+        lr_new = optimizer.param_groups[1]['lr']
         lr_scheduler.step(metrics=valid_loss)
 
         train_result = get_pedestrian_metrics(train_gt, train_probs)
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
 
         output_results_to_screen(i, train_loss, valid_loss, train_result, valid_result)
-        show_scalars_to_tensorboard(writer, i, train_loss, valid_loss, train_result, valid_result)
+        show_scalars_to_tensorboard_lr2(writer, i, train_loss, valid_loss, train_result, valid_result, lr_ft, lr_new)
 
         if valid_result.ma > maximum:
             maximum = valid_result.ma
@@ -193,8 +195,8 @@ def main():
 
     writer = SummaryWriter(os.path.join('runs', args.model_name))
 
-    model = CoCNN_ResNet50_Combine(len(train_dataset.attr_names_cn), [0] * 11 + [1] * 5 + [2] * 10 + [3] * 12 + [0] * 17)
-    # model = CoCNN_ResNet50_Max(len(train_dataset.attr_names_cn), [0] * 11 + [1] * 5 + [2] * 10 + [3] * 12 + [0] * 17)
+    # model = CoCNN_ResNet50_Combine(len(train_dataset.attr_names_cn), [0] * 11 + [1] * 5 + [2] * 10 + [3] * 12 + [0] * 17)
+    model = CoCNN_ResNet50_Max(len(train_dataset.attr_names_cn), [0] * 11 + [1] * 5 + [2] * 10 + [3] * 12 + [0] * 17)
 
     # show_image_model_to_tensorboard(writer, model, train_loader)
     model = model.to(device)
@@ -204,8 +206,18 @@ def main():
     elif args.loss == 'L2':
         criterion = L2_loss_function
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=False)
-    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.001)
+    finetuned_params = []
+    new_params = []
+    for n, p in model.named_parameters():
+        if n.find('fc') >= 0:
+            new_params.append(p)
+        else:
+            finetuned_params.append(p)
+    param_groups = [{'params': finetuned_params, 'lr': args.lr_ft},
+                    {'params': new_params, 'lr': args.lr_new}]
+    # optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+    optimizer = torch.optim.Adam(param_groups, weight_decay=args.weight_decay)
+    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
 
     start_epoch = 0
 

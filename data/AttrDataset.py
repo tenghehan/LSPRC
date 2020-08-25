@@ -52,12 +52,12 @@ def get_transform(args):
         T.Pad(10),
         T.RandomCrop((height, width)),
         T.RandomHorizontalFlip(),
-        T.RandomRotation(degrees=(-30, 30)),
+        # T.RandomRotation(degrees=(-30, 30)),
         T.ToTensor(),
         normalize,
-        T.RandomApply([
-            T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
-        ], p=0.5),
+        # T.RandomApply([
+        #     T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
+        # ], p=0.5),
     ])
 
     valid_transform = T.Compose([
