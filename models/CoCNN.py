@@ -118,6 +118,8 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.dropout = True
         self.dropout_rate = 0.5
 
+        self.attention = True
+
         self.fc_whole = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_whole)
         self.fc_head = nn.Linear(2048, self.attr_num)
@@ -127,11 +129,27 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.fc_lower = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_lower)
 
+        self.attention_whole = nn.Linear(2048, 2048)
+        self.init_fc(self.attention_whole)
+        self.attention_head = nn.Linear(2048, 2048)
+        self.init_fc(self.attention_head)
+        self.attention_upper = nn.Linear(2048, 2048)
+        self.init_fc(self.attention_upper)
+        self.attention_lower = nn.Linear(2048, 2048)
+        self.init_fc(self.attention_lower)
+
     def init_fc(self, fc: nn.Linear, std=0.001):
         init.normal_(fc.weight, std=std)
         init.constant_(fc.bias, 0)
 
     def whole_body_classifier(self, x):
+        if self.attention:
+            atten = F.avg_pool2d(x, x.shape[2:])
+            atten = atten.view(atten.size(0), -1)
+            atten = self.attention_whole(atten)
+
+            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
         if self.dropout:
@@ -140,6 +158,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def head_classifier(self, x):
+        if self.attention:
+            atten = F.avg_pool2d(x, x.shape[2:])
+            atten = atten.view(atten.size(0), -1)
+            atten = self.attention_head(atten)
+
+            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
         if self.dropout:
@@ -148,6 +173,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def upper_body_classifier(self, x):
+        if self.attention:
+            atten = F.avg_pool2d(x, x.shape[2:])
+            atten = atten.view(atten.size(0), -1)
+            atten = self.attention_upper(atten)
+
+            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
         if self.dropout:
@@ -156,6 +188,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def lower_body_classifier(self, x):
+        if self.attention:
+            atten = F.avg_pool2d(x, x.shape[2:])
+            atten = atten.view(atten.size(0), -1)
+            atten = self.attention_lower(atten)
+
+            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
         if self.dropout:
