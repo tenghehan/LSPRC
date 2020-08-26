@@ -1,4 +1,6 @@
 import argparse
+from typing import Union, List
+
 import torch
 from data.load_rap_attributes_data_mat import *
 from data.AttrDataset import AttrDataset, get_transform
@@ -13,6 +15,33 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 set_seed(100)
+
+
+class AttLR:
+    def __init__(self, optimizer, warmup: int, max_lr: Union[float, List[float]]):
+        self.optimizer = optimizer
+        self.last_epoch = -1
+
+        self.warmup = warmup
+        try:
+            max_lr = list(max_lr)
+        except ValueError:
+            max_lr = [max_lr]
+        # lr = multi * min(s ** -0.5, s * warmup ** -1.5)
+        # ==> max_lr = multi * LR(warmup) = multi * warmup^(-0.5)
+        # ==> multi = max_lr / warmup^(-0.5)
+        self.multipliers = [_max_lr * np.sqrt(warmup) for _max_lr in max_lr]
+
+    def step(self, epoch=None):
+        if epoch is None:
+            epoch = self.last_epoch + 1
+        self.last_epoch = epoch
+
+        for i, param_group in enumerate(self.optimizer.param_groups):
+            param_group['lr'] = self.multipliers[i] * min(
+                np.power(epoch, -0.5),
+                epoch * np.power(self.warmup, -1.5),
+            )
 
 
 def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer, weights_attr, pos_num):
@@ -104,8 +133,8 @@ def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion
 
         lr_ft = optimizer.param_groups[0]['lr']
         lr_new = optimizer.param_groups[1]['lr']
-        lr_scheduler.step(metrics=valid_loss)
-        # lr_scheduler.step()
+        # lr_scheduler.step(metrics=valid_loss)
+        lr_scheduler.step()
 
         train_result = get_pedestrian_metrics(train_gt, train_probs)
         valid_result = get_pedestrian_metrics(valid_gt, valid_probs)
@@ -216,8 +245,8 @@ def main():
                     {'params': new_params, 'lr': args.lr_new}]
     # optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
     optimizer = torch.optim.Adam(param_groups, weight_decay=args.weight_decay)
-    lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
-    # lr_scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='exp_range', base_lr=[0.001, 0.05], max_lr=[0.05, 0.2], step_size_up=5, gamma=0.8)
+    # lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
+    lr_scheduler = AttLR(optimizer, warmup=8, max_lr=[args.lr_ft * 1.5, args.lr_new * 1.5])
 
     start_epoch = 0
 
