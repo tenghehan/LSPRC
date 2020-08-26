@@ -4,6 +4,7 @@ import torch.nn.init as init
 import torch.nn.functional as F
 from models.resnet import resnet34
 from models.CAS import CAS
+from models.self_mask_block import self_mask_block
 
 class CAS_ResNet34(nn.Module):
     def __init__(
@@ -38,6 +39,17 @@ class CAS_ResNet34(nn.Module):
         self.CAS_module2 = CAS(128, ratio)
         self.CAS_module3 = CAS(256, ratio)
         self.CAS_module4 = CAS(512, ratio)
+
+        self.spatial_attention = True
+
+        self.self_mask_block_layer1_a = self_mask_block(64)
+        self.self_mask_block_layer1_b = self_mask_block(64)
+        self.self_mask_block_layer2_a = self_mask_block(128)
+        self.self_mask_block_layer2_b = self_mask_block(128)
+        self.self_mask_block_layer3_a = self_mask_block(256)
+        self.self_mask_block_layer3_b = self_mask_block(256)
+        self.self_mask_block_layer4_a = self_mask_block(512)
+        self.self_mask_block_layer4_b = self_mask_block(512)
 
 
     def ResNet_Layer1(self, x_a, x_b):
@@ -107,12 +119,27 @@ class CAS_ResNet34(nn.Module):
 
     def forward(self, x):
         x_a, x_b = self.ResNet_Layer1(x_a=x, x_b=x)
+        if self.spatial_attention:
+            x_a = self.self_mask_block_layer1_a(x_a)
+            x_b = self.self_mask_block_layer1_b(x_b)
         x_a, x_b = self.CAS_module1(x_a, x_b)
+
         x_a, x_b = self.ResNet_Layer2(x_a=x_a, x_b=x_b)
+        if self.spatial_attention:
+            x_a = self.self_mask_block_layer2_a(x_a)
+            x_b = self.self_mask_block_layer2_b(x_b)
         x_a, x_b = self.CAS_module2(x_a, x_b)
+
         x_a, x_b = self.ResNet_Layer3(x_a=x_a, x_b=x_b)
+        if self.spatial_attention:
+            x_a = self.self_mask_block_layer3_a(x_a)
+            x_b = self.self_mask_block_layer3_b(x_b)
         x_a, x_b = self.CAS_module3(x_a, x_b)
+
         x_a, x_b = self.ResNet_Layer4(x_a=x_a, x_b=x_b)
+        if self.spatial_attention:
+            x_a = self.self_mask_block_layer4_a(x_a)
+            x_b = self.self_mask_block_layer4_b(x_b)
         x_a, x_b = self.CAS_module4(x_a, x_b)
 
         x = self.classification(x_a=x_a, x_b=x_b)
@@ -121,7 +148,7 @@ class CAS_ResNet34(nn.Module):
 
 
 if __name__ == "__main__":
-    model = CAS_ResNet34([True] * 11 + [False] * 35 + [True] * 9)
+    model = CAS_ResNet34(32, [True] * 11 + [False] * 35 + [True] * 9)
     model.eval()
     batch_tensor = torch.ones([64, 3, 256, 192]).float()
     output = model(batch_tensor)

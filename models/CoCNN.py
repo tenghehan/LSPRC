@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 from models.resnet import resnet50
+from models.self_mask_block import self_mask_block
 
 
 class CoCNN_ResNet50_Combine(nn.Module):
@@ -118,7 +119,8 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.dropout = True
         self.dropout_rate = 0.5
 
-        self.attention = True
+        self.channel_attention = True
+        self.spatial_attention = True
 
         self.fc_whole = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_whole)
@@ -138,17 +140,24 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.attention_lower = nn.Linear(2048, 2048)
         self.init_fc(self.attention_lower)
 
+        self.self_mask_block_layer1 = self_mask_block(256)
+        self.self_mask_block_layer2 = self_mask_block(512)
+        self.self_mask_block_layer3 = self_mask_block(1024)
+        self.self_mask_block_layer4 = self_mask_block(2048)
+
+
     def init_fc(self, fc: nn.Linear, std=0.001):
         init.normal_(fc.weight, std=std)
         init.constant_(fc.bias, 0)
 
     def whole_body_classifier(self, x):
-        if self.attention:
+        origin_x = x
+        if self.channel_attention:
             atten = F.avg_pool2d(x, x.shape[2:])
             atten = atten.view(atten.size(0), -1)
             atten = self.attention_whole(atten)
 
-            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+            x = (atten.view(atten.size(0), -1, 1, 1)) * origin_x
 
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
@@ -158,12 +167,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def head_classifier(self, x):
-        if self.attention:
+        origin_x = x
+        if self.channel_attention:
             atten = F.avg_pool2d(x, x.shape[2:])
             atten = atten.view(atten.size(0), -1)
             atten = self.attention_head(atten)
 
-            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+            x = (atten.view(atten.size(0), -1, 1, 1)) * origin_x
 
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
@@ -173,12 +183,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def upper_body_classifier(self, x):
-        if self.attention:
+        origin_x = x
+        if self.channel_attention:
             atten = F.avg_pool2d(x, x.shape[2:])
             atten = atten.view(atten.size(0), -1)
             atten = self.attention_upper(atten)
 
-            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+            x = (atten.view(atten.size(0), -1, 1, 1)) * origin_x
 
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
@@ -188,12 +199,13 @@ class CoCNN_ResNet50_Max(nn.Module):
         return x
 
     def lower_body_classifier(self, x):
-        if self.attention:
+        origin_x = x
+        if self.channel_attention:
             atten = F.avg_pool2d(x, x.shape[2:])
             atten = atten.view(atten.size(0), -1)
             atten = self.attention_lower(atten)
 
-            x = (atten.view(atten.size(0), -1, 1, 1)) * x
+            x = (atten.view(atten.size(0), -1, 1, 1)) * origin_x
 
         x = F.avg_pool2d(x, x.shape[2:])
         x = x.view(x.size(0), -1)
@@ -206,8 +218,29 @@ class CoCNN_ResNet50_Max(nn.Module):
         x, _ = torch.max(torch.stack((whole, head, upper, lower), dim=0), dim=0)
         return x
 
+    def get_features(self, x):
+        x = self.features.conv1(x)
+        x = self.features.bn1(x)
+        x = self.features.relu(x)
+        x = self.features.maxpool(x)
+
+        x = self.features.layer1(x)
+        if self.spatial_attention:
+            x = self.self_mask_block_layer1(x)
+        x = self.features.layer2(x)
+        if self.spatial_attention:
+            x = self.self_mask_block_layer2(x)
+        x = self.features.layer3(x)
+        if self.spatial_attention:
+            x = self.self_mask_block_layer3(x)
+        x = self.features.layer4(x)
+        if self.spatial_attention:
+            x = self.self_mask_block_layer4(x)
+
+        return x
+
     def forward(self, x):
-        x = self.features(x)
+        x = self.get_features(x)
         logits_whole = self.whole_body_classifier(x)
         logits_head = self.head_classifier(x[:, :, 0:4, :])
         logits_upper = self.upper_body_classifier(x[:, :, 3:9, :])
