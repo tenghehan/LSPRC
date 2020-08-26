@@ -55,9 +55,9 @@ def get_transform(args):
         # T.RandomRotation(degrees=(-30, 30)),
         T.ToTensor(),
         normalize,
-        # T.RandomApply([
-        #     T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
-        # ], p=0.5),
+        T.RandomApply([
+            T.Lambda(lambda data: data + noise_std * torch.randn_like(data)),
+        ], p=0.5),
     ])
 
     valid_transform = T.Compose([
