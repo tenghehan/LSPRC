@@ -120,7 +120,7 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.dropout_rate = 0.5
 
         self.channel_attention = True
-        self.spatial_attention = True
+        self.spatial_attention = False
 
         self.fc_whole = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_whole)

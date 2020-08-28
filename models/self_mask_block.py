@@ -7,11 +7,12 @@ class self_mask_block(nn.Module):
     def __init__(self, inplanes, planes=1):
         super(self_mask_block, self).__init__()
 
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(planes, planes, kernel_size=1, bias=False)
+        p1, p2 = inplanes // 4, inplanes // 16
+        self.conv1 = nn.Conv2d(inplanes, p1, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(p1)
+        self.conv2 = nn.Conv2d(p1, p2, kernel_size=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(p2)
+        self.conv3 = nn.Conv2d(p2, planes, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
 

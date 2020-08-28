@@ -1,5 +1,5 @@
 import argparse
-from typing import Union, List
+from typing import Optional, Union, List
 
 import torch
 from data.load_rap_attributes_data_mat import *
@@ -18,19 +18,33 @@ set_seed(100)
 
 
 class AttLR:
-    def __init__(self, optimizer, warmup: int, max_lr: Union[float, List[float]]):
+    def __init__(
+            self,
+            optimizer,
+            warmup: int,
+            max_lr: Union[float, List[float]],
+            drop_lr: Optional[List[float]] = None,
+    ):
         self.optimizer = optimizer
         self.last_epoch = -1
 
         self.warmup = warmup
-        try:
-            max_lr = list(max_lr)
-        except ValueError:
-            max_lr = [max_lr]
-        # lr = multi * min(s ** -0.5, s * warmup ** -1.5)
-        # ==> max_lr = multi * LR(warmup) = multi * warmup^(-0.5)
-        # ==> multi = max_lr / warmup^(-0.5)
-        self.multipliers = [_max_lr * np.sqrt(warmup) for _max_lr in max_lr]
+        if isinstance(max_lr, float):
+            self.max_lrs = [max_lr]
+        else:
+            self.max_lrs = list(max_lr)
+        assert len(self.max_lrs) == len(self.optimizer.param_groups)
+        self.init_lrs = [param_group['lr'] for param_group in self.optimizer.param_groups]
+
+        if drop_lr is not None:
+            assert(len(drop_lr) == len(self.max_lrs))
+            self.drop_lrs = drop_lr
+        else:
+            self.drop_lrs = self.max_lrs
+        # lr = linear(init_lr, max_lr) when epoch < warmup
+        # lr = multi * epoch ** -0.5 when epoch >= warmup
+        # ==> multi = drop_lr / warmup^(-0.5)
+        self.multipliers = [_drop_lr * np.sqrt(warmup) for _drop_lr in self.drop_lrs]
 
     def step(self, epoch=None):
         if epoch is None:
@@ -38,10 +52,18 @@ class AttLR:
         self.last_epoch = epoch
 
         for i, param_group in enumerate(self.optimizer.param_groups):
-            param_group['lr'] = self.multipliers[i] * min(
-                np.power(epoch, -0.5),
-                epoch * np.power(self.warmup, -1.5),
-            )
+            init_lr, multi, max_lr = self.init_lrs[i], self.multipliers[i], self.max_lrs[i]
+            if epoch < self.warmup:
+                lr = init_lr + float(epoch) / self.warmup * (max_lr - init_lr)
+            else:
+                lr = multi * np.power(epoch, -0.5)
+            param_group['lr'] = lr
+
+    def state_dict(self):
+        return {}
+
+    def load_state_dict(self, state_dict):
+        pass
 
 
 def train_model(start_epoch, epoch, model, train_loader, valid_loader, criterion, optimizer, lr_scheduler, path, writer, weights_attr, pos_num):
@@ -246,7 +268,12 @@ def main():
     # optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
     optimizer = torch.optim.Adam(param_groups, weight_decay=args.weight_decay)
     # lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
-    lr_scheduler = AttLR(optimizer, warmup=8, max_lr=[args.lr_ft * 1.5, args.lr_new * 1.5])
+    lr_scheduler = AttLR(
+        optimizer,
+        warmup=10,
+        max_lr=[args.lr_ft * 1.5, args.lr_new * 1.5],
+        drop_lr=[args.lr_ft * 1.5, args.lr_new * 1.5],
+    )
 
     start_epoch = 0
 

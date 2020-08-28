@@ -41,6 +41,7 @@ class CAS_ResNet34(nn.Module):
         self.CAS_module4 = CAS(512, ratio)
 
         self.spatial_attention = True
+        self.channel_attention = False
 
         self.self_mask_block_layer1_a = self_mask_block(64)
         self.self_mask_block_layer1_b = self_mask_block(64)
@@ -50,6 +51,14 @@ class CAS_ResNet34(nn.Module):
         self.self_mask_block_layer3_b = self_mask_block(256)
         self.self_mask_block_layer4_a = self_mask_block(512)
         self.self_mask_block_layer4_b = self_mask_block(512)
+
+        if self.channel_attention:
+            self.channel_att_a = nn.Linear(512, 512)
+            self.channel_att_b = nn.Linear(512, 512)
+            init.normal_(self.channel_att_a.weight, std=0.001)
+            init.constant_(self.channel_att_a.bias, 0)
+            init.normal_(self.channel_att_b.weight, std=0.001)
+            init.constant_(self.channel_att_b.bias, 0)
 
 
     def ResNet_Layer1(self, x_a, x_b):
@@ -100,6 +109,21 @@ class CAS_ResNet34(nn.Module):
         return x
 
     def classification(self, x_a, x_b):
+        origin_x_a = x_a
+        origin_x_b = x_b
+        if self.channel_attention:
+            atten_a = F.avg_pool2d(x_a, x_a.shape[2:])
+            atten_a = atten_a.view(atten_a.size(0), -1)
+            atten_a = self.channel_att_a(atten_a)
+
+            x_a = (atten_a.view(atten_a.size(0), -1, 1, 1)) * origin_x_a
+
+            atten_b = F.avg_pool2d(x_b, x_b.shape[2:])
+            atten_b = atten_b.view(atten_b.size(0), -1)
+            atten_b = self.channel_att_b(atten_b)
+
+            x_b = (atten_b.view(atten_b.size(0), -1, 1, 1)) * origin_x_b
+
         x_a = F.avg_pool2d(x_a, x_a.shape[2:])
         x_a = x_a.view(x_a.size(0), -1)
 
