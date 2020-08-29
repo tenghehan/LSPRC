@@ -41,7 +41,7 @@ class CAS_ResNet34(nn.Module):
         self.CAS_module4 = CAS(512, ratio)
 
         self.spatial_attention = True
-        self.channel_attention = False
+        self.channel_attention = True
 
         self.self_mask_block_layer1_a = self_mask_block(64)
         self.self_mask_block_layer1_b = self_mask_block(64)
