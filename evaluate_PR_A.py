@@ -83,13 +83,15 @@ def evalQueryRes(query_res, image_index, query_gt):
     aps = []
     images_num = query_gt.shape[1]
     for scores in query_res:
-       ap = evaluate_attribute_retrieval_ap(scores.reshape((1, images_num)), \
-           query_gt[cnt,:].reshape((1, images_num)), \
-           image_index[cnt, :])
-       aps.append(ap)
-       cnt = cnt + 1
-       print('%d: %f' % (cnt, ap))
-       #break
+        #    ap = evaluate_attribute_retrieval_ap(scores.reshape((1, images_num)), \
+        #        query_gt[cnt,:].reshape((1, images_num)), \
+        #        image_index[cnt, :])
+        ap = evaluate_attribute_retrieval_ap(scores.reshape((1, images_num)), \
+           query_gt[cnt,:].reshape((1, images_num)))
+        aps.append(ap)
+        cnt = cnt + 1
+        # print('%d: %f' % (cnt, ap))
+        #break
     mAP1 = sum(aps[0:55]) / float(len(aps[0:55]))
     mAP2 = sum(aps[55:97]) / float(len(aps[55:97]))
     mAP3 = sum(aps[97:181]) / float(len(aps[97:181]))
@@ -100,9 +102,9 @@ def evalQueryRes(query_res, image_index, query_gt):
 
 def test():
     # Modify the followings to the real filenames.
-    attr_gt_filename = "data/Attr_testdata_info.txt"
-    query_filename = "data/attr_query_index.txt"
-    query_res_filename = "../../outputs/query_res_DL_zhike.csv"
+    attr_gt_filename = "validation_gt/attributes_recognition_val_gt.txt"
+    query_filename = "attr_query_index.txt"
+    query_res_filename = "results/CoCNN_max_ce_Adam_lr2_channel_spatialdebug/query_val_results.txt"
     # Load attr ground truth
     attr_gt = loadAttrGt(attr_gt_filename)
     # Generate query ground truth

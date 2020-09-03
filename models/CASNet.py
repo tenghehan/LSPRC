@@ -41,16 +41,17 @@ class CAS_ResNet34(nn.Module):
         self.CAS_module4 = CAS(512, ratio)
 
         self.spatial_attention = True
-        self.channel_attention = True
+        self.channel_attention = False
 
-        self.self_mask_block_layer1_a = self_mask_block(64)
-        self.self_mask_block_layer1_b = self_mask_block(64)
-        self.self_mask_block_layer2_a = self_mask_block(128)
-        self.self_mask_block_layer2_b = self_mask_block(128)
-        self.self_mask_block_layer3_a = self_mask_block(256)
-        self.self_mask_block_layer3_b = self_mask_block(256)
-        self.self_mask_block_layer4_a = self_mask_block(512)
-        self.self_mask_block_layer4_b = self_mask_block(512)
+        if self.spatial_attention:
+            self.self_mask_block_layer1_a = self_mask_block(64)
+            self.self_mask_block_layer1_b = self_mask_block(64)
+            self.self_mask_block_layer2_a = self_mask_block(128)
+            self.self_mask_block_layer2_b = self_mask_block(128)
+            self.self_mask_block_layer3_a = self_mask_block(256)
+            self.self_mask_block_layer3_b = self_mask_block(256)
+            self.self_mask_block_layer4_a = self_mask_block(512)
+            self.self_mask_block_layer4_b = self_mask_block(512)
 
         if self.channel_attention:
             self.channel_att_a = nn.Linear(512, 512)

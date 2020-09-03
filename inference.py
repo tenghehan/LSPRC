@@ -5,8 +5,12 @@ from data.load_rap_attributes_data_mat import *
 from data.AttrDataset import AttrDataset, get_transform
 from torch.utils.data import DataLoader
 from models.DeepMAR import DeepMAR_ResNet50
+from models.CASNet import CAS_ResNet34
+from models.CASNet_fusion import CAS_Fusion_ResNet34
+from models.CoCNN import CoCNN_ResNet50_Max
 from tqdm import tqdm
 from utils.tools import get_pedestrian_metrics, logits_to_probs_joint
+import os
 
 
 def load_data():
@@ -42,16 +46,18 @@ def load_data():
 
 
 def load_model():
-    model = DeepMAR_ResNet50(55)
+    # model = DeepMAR_ResNet50(55)
+    model = CAS_ResNet34(32, [True] * 11 + [False] * 35 + [True] * 9)
+    # model = CoCNN_ResNet50_Max(55, [0] * 11 + [1] * 5 + [2] * 10 + [3] * 12 + [0] * 17)
     model = model.to(device)
-    checkpoint = torch.load(args.model_path)
+    checkpoint = torch.load(os.path.join(args.model_path, 'max.pth'))
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
     return model
 
 
 def attributes_recognition_results(preds_probs):
-    with open('attributes_recognition_results.txt', 'w') as file:
+    with open(os.path.join(args.model_path, 'attributes_recognition_results.txt'), 'w') as file:
         for i in range(len(preds_probs)):
             print(i, end='', file=file)
             for prob in preds_probs[i]:
@@ -65,9 +71,12 @@ def query_results(query_list, preds_probs):
         confidence_list = np.ones(preds_probs.shape[0])
         for index in query:
             confidence_list = confidence_list * preds_probs[:, index]
-        results.append(sorted(list(enumerate(confidence_list.tolist())), key=lambda t:t[1], reverse=True))
+        if args.sort:
+            results.append(sorted(list(enumerate(confidence_list.tolist())), key=lambda t:t[1], reverse=True))
+        else:
+            results.append(list(enumerate(confidence_list.tolist())))
 
-    with open('query_results.txt', 'w') as file:
+    with open(os.path.join(args.model_path, 'query_results.txt'), 'w') as file:
         for i in range(len(results)):
             print(i, end='', file=file)
             for (image_index, confidence) in results[i]:
@@ -122,7 +131,7 @@ def main():
     output_ma_acc(preds_probs, gt_labels)
 
     # attributes_recognition_results(preds_probs)
-    #
+    
     # query_list = load_query('attr_query_index.txt')
     # query_results(query_list, preds_probs)
 

@@ -237,6 +237,10 @@ def show_scalars_to_tensorboard_lr2(writer, epoch, train_loss, valid_loss, train
     writer.add_scalar('F1/valid', valid_result.instance_f1, i)
     writer.add_scalar('Lr/lr_ft', lr_ft, i)
     writer.add_scalar('Lr/lr_new', lr_new, i)
+    try:
+        writer.add_scalar('ap/valid', valid_result.ap, i)
+    except AttributeError:
+        pass
     
 
 def show_scalars_to_tensorboard_lr(writer, epoch, train_loss, valid_loss, train_result, valid_result, lr):
@@ -254,18 +258,26 @@ def show_scalars_to_tensorboard_lr(writer, epoch, train_loss, valid_loss, train_
     writer.add_scalar('F1/train', train_result.instance_f1, i)
     writer.add_scalar('F1/valid', valid_result.instance_f1, i)
     writer.add_scalar('Lr/lr', lr, i)
+    try:
+        writer.add_scalar('ap/valid', valid_result.ap, i)
+    except AttributeError:
+        pass
 
 
 def output_results_to_screen(epoch, train_loss, valid_loss, train_result, valid_result):
+    try:
+        valid_ap = valid_result.ap
+    except AttributeError:
+        valid_ap = float('nan')
     print(f'epoch {epoch} \n',
           'training loss: {:.6f}, validate loss: {:.6f} \n'.format(train_loss, valid_loss),
           'training ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
               train_result.ma, train_result.instance_acc, train_result.instance_prec,
               train_result.instance_recall, train_result.instance_f1
           ),
-          'validation ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f} \n'.format(
+          'validation ma: {:.4f}, Acc: {:.4f}, Prec: {:.4f}, Rec: {:.4f}, F1: {:.4f}, ap: {:.4f} \n'.format(
               valid_result.ma, valid_result.instance_acc, valid_result.instance_prec,
-              valid_result.instance_recall, valid_result.instance_f1
+              valid_result.instance_recall, valid_result.instance_f1, valid_ap,
           ))
 
 

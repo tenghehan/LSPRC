@@ -21,7 +21,7 @@ def evaluate_attribute_classification(gt_result, pt_result):
     assert type(gt_result) == np.ndarray 
     assert type(pt_result) == np.ndarray
     if gt_result.shape != pt_result.shape:
-        print 'Shape beteen groundtruth and predicted results are different'
+        print('Shape beteen groundtruth and predicted results are different')
     # compute the label-based accuracy
     result = {}
     gt_pos = np.sum((gt_result == 1).astype(float), axis=0)
@@ -69,11 +69,11 @@ def test_evaluate_attribute_classification():
     pt_result[pt_result >= 0.5] = 1
     pt_result[pt_result < 0.5] = -1
     result = evaluate_attribute_classification(gt_result, pt_result) 
-    print "label-based metric:\n mA: %.4f" % (np.mean(result['label_acc']))
-    print "instance-based metric: \n"
-    print "acc: %.4f, prec: %.4f, rec: %.4f, F1: %.4f"%(
+    print("label-based metric:\n mA: %.4f" % (np.mean(result['label_acc'])))
+    print("instance-based metric: \n")
+    print("acc: %.4f, prec: %.4f, rec: %.4f, F1: %.4f"%(
         result['instance_acc'], result['instance_precision'], 
-        result['instance_recall'], result['instance_F1'])
+        result['instance_recall'], result['instance_F1']))
 
 if __name__ == "__main__":
     test_evaluate_attribute_classification()

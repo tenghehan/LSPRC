@@ -94,13 +94,14 @@ def inference_argument_parser():
                         help='directory path of training and validation images')
     parser.add_argument('--test_images_dir', type=str, default='data/RAP/test_images')
     parser.add_argument('--dataset', type=str, required=True, choices=['validation_set','test_set'])
-    parser.add_argument('--height', type=int, default=224)
-    parser.add_argument('--width', type=int, default=224)
+    parser.add_argument('--height', type=int, default=256)
+    parser.add_argument('--width', type=int, default=192)
     parser.add_argument('--batchsize', type=int, default=64)
     parser.add_argument('--num_workers', type=int, default=4)
     parser.add_argument('--gpu_id', type=int, default=0, help='GPU device id used')
-    parser.add_argument('--model_path', type=str, default='results/deepMAR_jointweightedloss/max.pth')
+    parser.add_argument('--model_path', type=str, required=True)
     parser.add_argument('--probs', type=str, required=True, choices=['sigmoid', 'joint'])
+    parser.add_argument('--sort', default=False, action='store_true')
 
     return parser
 

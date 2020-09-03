@@ -26,7 +26,7 @@ def test_evaluate_attribute_retrieval_ap():
     scores = np.random.rand(1,5)
     groundtruth = np.random.randint(1,10,5).reshape(1,5)%2
     ap = evaluate_attribute_retrieval_ap(scores, groundtruth)
-    print scores, groundtruth, ap
+    print(scores, groundtruth, ap)
 
 if __name__ == "__main__":
     test_evaluate_attribute_retrieval_ap()

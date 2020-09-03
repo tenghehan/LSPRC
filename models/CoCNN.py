@@ -120,7 +120,7 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.dropout_rate = 0.5
 
         self.channel_attention = True
-        self.spatial_attention = False
+        self.spatial_attention = True
 
         self.fc_whole = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_whole)
@@ -131,19 +131,21 @@ class CoCNN_ResNet50_Max(nn.Module):
         self.fc_lower = nn.Linear(2048, self.attr_num)
         self.init_fc(self.fc_lower)
 
-        self.attention_whole = nn.Linear(2048, 2048)
-        self.init_fc(self.attention_whole)
-        self.attention_head = nn.Linear(2048, 2048)
-        self.init_fc(self.attention_head)
-        self.attention_upper = nn.Linear(2048, 2048)
-        self.init_fc(self.attention_upper)
-        self.attention_lower = nn.Linear(2048, 2048)
-        self.init_fc(self.attention_lower)
+        if self.channel_attention:
+            self.attention_whole = nn.Linear(2048, 2048)
+            self.init_fc(self.attention_whole)
+            self.attention_head = nn.Linear(2048, 2048)
+            self.init_fc(self.attention_head)
+            self.attention_upper = nn.Linear(2048, 2048)
+            self.init_fc(self.attention_upper)
+            self.attention_lower = nn.Linear(2048, 2048)
+            self.init_fc(self.attention_lower)
 
-        self.self_mask_block_layer1 = self_mask_block(256)
-        self.self_mask_block_layer2 = self_mask_block(512)
-        self.self_mask_block_layer3 = self_mask_block(1024)
-        self.self_mask_block_layer4 = self_mask_block(2048)
+        if self.spatial_attention:
+            self.self_mask_block_layer1 = self_mask_block(256)
+            self.self_mask_block_layer2 = self_mask_block(512)
+            self.self_mask_block_layer3 = self_mask_block(1024)
+            self.self_mask_block_layer4 = self_mask_block(2048)
 
 
     def init_fc(self, fc: nn.Linear, std=0.001):

@@ -53,7 +53,7 @@ def get_transform(args):
         T.RandomCrop((height, width)),
         T.RandomHorizontalFlip(),
         # T.RandomRotation(degrees=(-30, 30)),
-        T.ColorJitter(brightness=0.5, contrast=0.5),
+        # T.ColorJitter(brightness=0.5, contrast=0.5),
         T.ToTensor(),
         normalize,
         T.RandomApply([
