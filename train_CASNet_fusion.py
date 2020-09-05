@@ -259,10 +259,8 @@ def main():
     for n, p in model.named_parameters():
         if n.find('classifier') >= 0 or n.find('CAS') >= 0 or n.find('self_mask_block') >=0 \
                 or n.find('channel_att') >=0 or n.find('fusion_block') >=0:
-            # print(f'Learning rate: {n} -> {args.lr_new}')
             new_params.append(p)
         else:
-            # print(f'Learning rate: {n} -> {args.lr_ft}')
             finetuned_params.append(p)
     param_groups = [{'params': finetuned_params, 'lr': args.lr_ft / 2},
                     {'params': new_params, 'lr': args.lr_new / 2}]

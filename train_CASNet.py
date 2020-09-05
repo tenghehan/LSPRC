@@ -257,21 +257,22 @@ def main():
     finetuned_params = []
     new_params = []
     for n, p in model.named_parameters():
-        if n.find('classifier') >= 0 or n.find('CAS') >= 0 or n.find('self_mask_block') >=0 or n.find('channel_att') >=0:
+        # if n.find('classifier') >= 0 or n.find('CAS') >= 0 or n.find('self_mask_block') >=0 or n.find('channel_att') >=0:
+        if n.find('classifier') >= 0 or n.find('CAS') >= 0:
             # print(f'Learning rate: {n} -> {args.lr_new}')
             new_params.append(p)
         else:
             # print(f'Learning rate: {n} -> {args.lr_ft}')
             finetuned_params.append(p)
-    param_groups = [{'params': finetuned_params, 'lr': args.lr_ft / 2},
-                    {'params': new_params, 'lr': args.lr_new / 2}]
+    param_groups = [{'params': finetuned_params, 'lr': args.lr_ft},
+                    {'params': new_params, 'lr': args.lr_new}]
     # optimizer = torch.optim.SGD(param_groups, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
     optimizer = torch.optim.Adam(param_groups, weight_decay=args.weight_decay)
     # lr_scheduler = ReduceLROnPlateau(optimizer, factor=0.5, patience=4, min_lr=0.00001)
     lr_scheduler = AttLR(
         optimizer,
         warmup=8,
-        max_lr=[args.lr_ft, args.lr_new],
+        max_lr=[args.lr_ft * 1.5, args.lr_new * 1.5],
         drop_lr=[args.lr_ft, args.lr_new],
     )
 
